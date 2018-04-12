@@ -12,7 +12,7 @@ def main():
     pygame.display.set_caption("minimal program")
 
     # create a surface on screen that has the size of 240 x 180
-    screen = pygame.display.set_mode((240,180))
+    screen = pygame.display.set_mode((600,300))
 
     # define a variable to control the main loop
     running = True
@@ -25,6 +25,9 @@ def main():
             if event.type == pygame.QUIT:
                 # change the value to False, to exit the main loop
                 running = False
+
+        pygame.draw.rect(screen, pygame.Color(255, 0, 0, 128), pygame.Rect(0, 0, 20, 20))
+        pygame.display.flip()
 
 
 # run the main function only if this module is executed as the main script
