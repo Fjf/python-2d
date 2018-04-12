@@ -1,6 +1,8 @@
 # import the pygame module, so you can use it
 import pygame
+import socket
 import time
+import select
 
 WHITE = (255, 255, 255)
 
@@ -63,6 +65,17 @@ def main():
     all_sprites_list.add(player)
 
     clock = pygame.time.Clock()
+
+    # Connect to server
+    HOST = 'localhost'
+    PORT = 5000
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        client_socket.connect((HOST, PORT))
+    except Exception as e:
+        print("Cannot connect to the server:", e)
+    print("Connected")
+
     # main loop
     while running:
         # event handling, gets all event from the eventqueue
@@ -82,6 +95,16 @@ def main():
             player.moveUp(5)
         if keys[pygame.K_DOWN]:
             player.moveDown(5)
+
+
+        client_socket.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
+
+        # socket logic update players
+        read_sockets, write_sockets, error_sockets = select.select([client_socket], [], [], 0.01)
+        for sock in read_sockets:
+            print(sock.recv(4096).decode())
+
+
 
         all_sprites_list.update()
 

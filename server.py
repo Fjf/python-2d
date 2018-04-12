@@ -18,7 +18,7 @@ if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # this has no effect, why ?
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(("0.0.0.0", PORT))
+    server_socket.bind(("", PORT))
     server_socket.listen(10)
 
     # Add server socket to the list of readable connections
@@ -28,16 +28,19 @@ if __name__ == "__main__":
 
     while 1:
         # Get the list sockets which are ready to be read through select
-        read_sockets, write_sockets, error_sockets = select.select(clients,[],[])
+        read_sockets, write_sockets, error_sockets = select.select(clients, [], [], 0.01)
 
         for sock in read_sockets:
 
             #New connection
             if sock == server_socket:
                 # Handle the case in which there is a new connection recieved through server_socket
-                sockfd, addr = server_socket.accept()
-                clients.append(sockfd)
-                print("Client (%s, %s) connected" % addr)
+                try:
+                    sockfd, addr = server_socket.accept()
+                    clients.append(sockfd)
+                    print("Client (%s, %s) connected" % addr)
+                except:
+                    print("Wadu snek")
 
             #Some incoming message from a client
             else:
@@ -49,7 +52,7 @@ if __name__ == "__main__":
                     # echo back the client message
                     if data:
                         stringdata = data.decode('utf-8')
-                        stringdata = 'playerdata: ' + stringdata
+                        stringdata = addr + ":" + stringdata + ";"
                         broadcast_data(server_socket, clients, stringdata)
 
                 # client disconnected, so remove from socket list
