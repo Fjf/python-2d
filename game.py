@@ -39,7 +39,9 @@ class Player(object):
     def draw(self, surface):
         pygame.draw.rect(self.screen, pygame.Color(255, 0, 0, 128), self.rect)
 
-# define a main function
+
+
+
 def main():
 
     # initialize the pygame module
@@ -50,13 +52,21 @@ def main():
     pygame.display.set_caption("minimal program")
 
     # create a surface on screen that has the size of 240 x 180
-    screen = pygame.display.set_mode((600,300))
+    scr_width = 600
+    scr_height = 300;
+    screen = pygame.display.set_mode((scr_width, scr_height))
 
     # define a variable to control the main loop
     running = True
 
     player = Player(screen)
 
+    img = pygame.image.load('LUL.png').convert_alpha()
+
+    x = 0
+    y = 0
+
+    clock = pygame.time.Clock()
     # main loop
     while running:
         # event handling, gets all event from the eventqueue
@@ -66,11 +76,22 @@ def main():
                 # change the value to False, to exit the main loop
                 running = False
 
+        # Key handling
+        if pygame.key.get_pressed()[pygame.K_a]:
+            x -= 1
+        if pygame.key.get_pressed()[pygame.K_d]:
+            x += 1
+        if pygame.key.get_pressed()[pygame.K_w]:
+            y -= 1
+        if pygame.key.get_pressed()[pygame.K_s]:
+            y += 1
 
-        player.draw(screen)
+        # Clear screen
+        pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, scr_width, scr_height))
+        # Draw rect
+        pygame.draw.rect(screen, pygame.Color(255, 0, 0, 128), pygame.Rect(x, y, 20, 20))
         pygame.display.flip()
         clock.tick(60)
-
 
 
 # run the main function only if this module is executed as the main script
