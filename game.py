@@ -40,7 +40,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += pixels
 
 
-
 def main():
 
     # initialize the pygame module
