@@ -18,7 +18,7 @@ if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # this has no effect, why ?
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(("", PORT))
+    server_socket.bind(("0.0.0.0", PORT))
     server_socket.listen(10)
 
     # Add server socket to the list of readable connections
@@ -52,7 +52,7 @@ if __name__ == "__main__":
                     # echo back the client message
                     if data:
                         stringdata = data.decode('utf-8')
-                        stringdata = addr + ":" + stringdata + ";"
+                        stringdata = str(sock.getpeername()[1]) + ":" + stringdata + ";"
                         broadcast_data(server_socket, clients, stringdata)
 
                 # client disconnected, so remove from socket list

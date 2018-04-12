@@ -2,7 +2,6 @@
 import pygame
 import socket
 import time
-import select
 
 WHITE = (255, 255, 255)
 
@@ -41,6 +40,10 @@ class Player(pygame.sprite.Sprite):
     def moveDown(self, pixels):
         self.rect.y += pixels
 
+    def setNewCoords(self, x, y):
+        self.rect.x = x
+        self.rect.y = y
+
 
 def main():
 
@@ -68,12 +71,15 @@ def main():
     # Connect to server
     HOST = 'localhost'
     PORT = 5000
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        client_socket.connect((HOST, PORT))
+        sock.connect((HOST, PORT))
     except Exception as e:
         print("Cannot connect to the server:", e)
     print("Connected")
+
+
+    otherplayers = {}
 
     # main loop
     while running:
@@ -95,15 +101,20 @@ def main():
         if keys[pygame.K_DOWN]:
             player.moveDown(5)
 
-
-        client_socket.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
-
         # socket logic update players
-        read_sockets, write_sockets, error_sockets = select.select([client_socket], [], [], 0.01)
-        for sock in read_sockets:
-            print(sock.recv(4096).decode())
+        sock.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
+        for data in sock.recv(4096).decode().split(";"):
+            if not data:
+                break
 
+            print(data)
 
+            port, x, y = data.split(":")
+            if port not in otherplayers:
+                p = Player(screen)
+                all_sprites_list.add(p)
+                otherplayers[port] = p
+            otherplayers[port].setNewCoords(int(x), int(y))
 
         all_sprites_list.update()
 
