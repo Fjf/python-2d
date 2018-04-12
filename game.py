@@ -4,7 +4,7 @@ import time
 
 WHITE = (255, 255, 255)
 
-class Player(object):
+class Player(pygame.sprite.Sprite):
     def __init__(self, screen):
         # Call the parent class (Sprite) constructor
         super().__init__()
@@ -24,21 +24,20 @@ class Player(object):
         self.rect = self.image.get_rect()
         self.screen = screen
 
-    def handle_keys(self):
-        key = pygame.key.get_pressed()
-        dist = 1
-        if key[pygame.K_LEFT]:
-           self.rect.move_ip(-1, 0)
-        if key[pygame.K_RIGHT]:
-           self.rect.move_ip(1, 0)
-        if key[pygame.K_UP]:
-           self.rect.move_ip(0, -1)
-        if key[pygame.K_DOWN]:
-           self.rect.move_ip(0, 1)
-
     def draw(self, surface):
         pygame.draw.rect(self.screen, pygame.Color(255, 0, 0, 128), self.rect)
 
+    def moveRight(self, pixels):
+        self.rect.x += pixels
+
+    def moveLeft(self, pixels):
+        self.rect.x -= pixels
+
+    def moveUp(self, pixels):
+        self.rect.y -= pixels
+
+    def moveDown(self, pixels):
+        self.rect.y += pixels
 
 
 
@@ -59,12 +58,9 @@ def main():
     # define a variable to control the main loop
     running = True
 
+    all_sprites_list = pygame.sprite.Group()
     player = Player(screen)
-
-    img = pygame.image.load('LUL.png').convert_alpha()
-
-    x = 0
-    y = 0
+    all_sprites_list.add(player)
 
     clock = pygame.time.Clock()
     # main loop
@@ -76,20 +72,25 @@ def main():
                 # change the value to False, to exit the main loop
                 running = False
 
-        # Key handling
-        if pygame.key.get_pressed()[pygame.K_a]:
-            x -= 1
-        if pygame.key.get_pressed()[pygame.K_d]:
-            x += 1
-        if pygame.key.get_pressed()[pygame.K_w]:
-            y -= 1
-        if pygame.key.get_pressed()[pygame.K_s]:
-            y += 1
+        # Handle keys
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            player.moveLeft(5)
+        if keys[pygame.K_RIGHT]:
+            player.moveRight(5)
+        if keys[pygame.K_UP]:
+            player.moveUp(5)
+        if keys[pygame.K_DOWN]:
+            player.moveDown(5)
+
+        all_sprites_list.update()
 
         # Clear screen
         pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, scr_width, scr_height))
-        # Draw rect
-        pygame.draw.rect(screen, pygame.Color(255, 0, 0, 128), pygame.Rect(x, y, 20, 20))
+
+        # Draw all sprites in the group of sprites
+        all_sprites_list.draw(screen)
+
         pygame.display.flip()
         clock.tick(60)
 
