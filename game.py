@@ -4,6 +4,9 @@ import socket
 import time
 
 WHITE = (255, 255, 255)
+LOCAL_DEBUG = True
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, screen):
@@ -11,18 +14,20 @@ class Player(pygame.sprite.Sprite):
         super().__init__()
         # Pass in the color of the car, and its x and y position, width and height.
         # Set the background color and set it to be transparent
-        self.image = pygame.Surface([30, 30])
-        self.image.fill(WHITE)
-        self.image.set_colorkey(WHITE)
 
-        # Draw the car (a rectangle!)
-        pygame.draw.rect(self.image, pygame.Color(255, 0, 0, 128), [0, 0, 30, 30])
+        self.filter = pygame.Surface([30, 30])
+        # pygame.draw.rect(self.filter, pygame.Color(255, 0, 0, 255))
+        pygame.draw.circle(self.filter, pygame.Color(255, 0, 0, 10), [30 // 2, 30 // 2], 15)
+        # self.filter.fill(pygame.Color(255, 0, 0, 128))
 
-        # Instead we could load a proper pciture of a car...
+        # Instead we could load a proper pciture
         self.image = pygame.image.load("LUL.png").convert_alpha()
+        # for
 
+        self.image = self.filter
         # Fetch the rectangle object that has the dimensions of the image.
-        self.rect = self.image.get_rect()
+        # self.rect = self.image.get_rect()
+        self.rect = self.filter.get_rect()
         self.screen = screen
 
     def draw(self, surface):
@@ -44,10 +49,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-
-
 def main():
-
     # initialize the pygame module
     pygame.init()
     # load and set the logo
@@ -56,9 +58,7 @@ def main():
     pygame.display.set_caption("minimal program")
 
     # create a surface on screen that has the size of 240 x 180
-    scr_width = 600
-    scr_height = 300;
-    screen = pygame.display.set_mode((scr_width, scr_height))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # define a variable to control the main loop
     running = True
@@ -69,15 +69,17 @@ def main():
 
     clock = pygame.time.Clock()
 
-    # Connect to server
-    HOST = 'localhost'
-    PORT = 5000
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((HOST, PORT))
-    except Exception as e:
-        print("Cannot connect to the server:", e)
-    print("Connected")
+    if not LOCAL_DEBUG:
+        # Connect to server
+        HOST = '217.101.168.167'
+        # HOST = 'localhost';
+        PORT = 25565
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect((HOST, PORT))
+        except Exception as e:
+            print("Cannot connect to the server:", e)
+        print("Connected")
 
 
     otherplayers = {}
@@ -89,6 +91,9 @@ def main():
             # only do something if the event is of type QUIT
             if event.type == pygame.QUIT:
                 # change the value to False, to exit the main loop
+                if not LOCAL_DEBUG:
+                    sock.close()
+
                 running = False
 
         # Handle keys
@@ -103,24 +108,25 @@ def main():
             player.moveDown(5)
 
         # socket logic update players
-        sock.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
-        for data in sock.recv(4096).decode().split(";"):
-            if not data:
-                break
+        if not LOCAL_DEBUG:
+            sock.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
+            for data in sock.recv(4096).decode().split(";"):
+                if not data:
+                    break
 
-            print(data)
+                print(data)
 
-            port, x, y = data.split(":")
-            if port not in otherplayers:
-                p = Player(screen)
-                all_sprites_list.add(p)
-                otherplayers[port] = p
-            otherplayers[port].setNewCoords(int(x), int(y))
+                port, x, y = data.split(":")
+                if port not in otherplayers:
+                    p = Player(screen)
+                    all_sprites_list.add(p)
+                    otherplayers[port] = p
+                otherplayers[port].setNewCoords(int(x), int(y))
 
-        all_sprites_list.update()
+            all_sprites_list.update()
 
         # Clear screen
-        pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, scr_width, scr_height))
+        pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
 
         # Draw all sprites in the group of sprites
         all_sprites_list.draw(screen)
