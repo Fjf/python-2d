@@ -2,6 +2,7 @@
 import pygame
 import socket
 import time
+import math
 
 WHITE = (255, 255, 255)
 LOCAL_DEBUG = True
@@ -12,9 +13,9 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, screen):
         # Call the parent class (Sprite) constructor
         super().__init__()
-        # Pass in the color of the car, and its x and y position, width and height.
-        # Set the background color and set it to be transparent
 
+        # You start without score (small)
+        self.score = 0
 
         filter = pygame.Surface([30, 30])
         pygame.draw.circle(filter, pygame.Color(255, 255, 255, 255), [30 // 2, 30 // 2], 15)
@@ -48,6 +49,16 @@ class Player(pygame.sprite.Sprite):
 
     def moveDown(self, pixels):
         self.rect.y += pixels
+
+    def eatSomething(self, amount):
+        self.score += amount
+
+        # Update image size.
+        self.image = pygame.image.load("LUL.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (int(30 + math.sqrt(self.score)), int(30 + math.sqrt(self.score))))
+        # Update rectangle
+        self.rect = self.image.get_rect(center=(self.rect.x + self.rect.width//2, self.rect.y + self.rect.height//2))
+
 
     def setNewCoords(self, x, y):
         self.rect.x = x
@@ -111,6 +122,8 @@ def main():
             player.moveUp(5)
         if keys[pygame.K_DOWN]:
             player.moveDown(5)
+        if keys[pygame.K_w]:
+            player.eatSomething(5)
 
         # socket logic update players
         if not LOCAL_DEBUG:
