@@ -14,9 +14,8 @@ class Wall(pygame.sprite.Sprite):
     def __init__(self,x,y,width,height):
         super().__init__()
         self.image = pygame.Surface([width, height])
+        self.image.fill(pygame.Color(255, 255, 0))
         self.rect = self.image.get_rect(topleft=(x, y))
-        # self.rect.y = y
-        # self.rect.x = x
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, screen, walls):
@@ -37,22 +36,25 @@ class Player(pygame.sprite.Sprite):
         self.walls = walls
 
     def draw(self, surface):
-        pygame.draw.rect(self.screen, pygame.Color(255, 0, 0, 128), self.rect)
+        pygame.draw.rect(surface, pygame.Color(255, 0, 0, 128), self.rect)
 
 
     def update(self):
+        collision = self.wall_collisions()
         self.rect.x += self.velocity.x
         self.rect.y += self.velocity.y
-        move = self.wall_collisions()
-        if not move:
-            self.rect.x -= self.velocity.x
-            self.rect.y -= self.velocity.y
+
+        if not collision:
+            collision = self.wall_collisions()
+            if collision:
+                self.rect.x -= self.velocity.x
+                self.rect.y -= self.velocity.y
 
     def wall_collisions(self):
         for wall in self.walls:
             if(pygame.sprite.collide_rect(self, wall)):
-                 return False
-        return True
+                 return True
+        return False
 
     def eatSomething(self, amount):
         self.score += amount
@@ -88,8 +90,10 @@ def main():
 
     wall = Wall(0, 0, 10, SCREEN_HEIGHT)
     wall2 = Wall(SCREEN_WIDTH - 10, 0, 10, SCREEN_HEIGHT)
-    walls.add(wall2)
-    all_sprites_list.add(wall2)
+    wall3 = Wall(0, 0, SCREEN_WIDTH, 10)
+    wall4 = Wall(0, SCREEN_HEIGHT - 10, SCREEN_WIDTH, 10)
+    walls.add(wall, wall2, wall3, wall4)
+    all_sprites_list.add(wall, wall2, wall3, wall4)
 
     player = Player(screen, walls)
     all_sprites_list.add(player)
