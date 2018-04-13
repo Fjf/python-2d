@@ -1,12 +1,12 @@
 # import the pygame module, so you can use it
 import pygame
 from pygame.math import Vector2
-import socket
+import socket, select
 import time
 import math
 
 WHITE = (255, 255, 255)
-LOCAL_DEBUG = True
+LOCAL_DEBUG = False
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
@@ -36,9 +36,12 @@ class Player(pygame.sprite.Sprite):
         self.velocity = Vector2(0, 0)
         self.walls = walls
 
+        self.prev_x = 0
+        self.prev_y = 0
+        self.prev_score = 0
+
     def draw(self, surface):
         pygame.draw.rect(self.screen, pygame.Color(255, 0, 0, 128), self.rect)
-
 
     def update(self):
         self.rect.x += self.velocity.x
@@ -56,16 +59,33 @@ class Player(pygame.sprite.Sprite):
 
     def eatSomething(self, amount):
         self.score += amount
+        self.updateSprite()
 
+    def updateSprite(self):
+        move_amount = (math.ceil(30 + math.sqrt(self.score)) - self.image.get_width()) // 2 + 1
         # Update image size.
         self.image = pygame.image.load("LUL.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (int(30 + math.sqrt(self.score)), int(30 + math.sqrt(self.score))))
         # Update rectangle
         self.rect = self.image.get_rect(center=(self.rect.x + self.rect.width//2, self.rect.y + self.rect.height//2))
 
-    def setNewCoords(self, x, y):
+    def hasUpdated(self):
+        if self.rect.x == self.prev_x and self.rect.y == self.prev_y and self.score == self.prev_score:
+            return False
+        else:
+            self.prev_x = self.rect.x
+            self.prev_y = self.rect.y
+            self.prev_score = self.score
+            return True
+
+    def setNewStats(self, x, y, score):
         self.rect.x = x
         self.rect.y = y
+        self.score = score
+        self.updateSprite()
+
+    def getData(self):
+        return str(self.rect.x) + ":" + str(self.rect.y) + ":" + str(self.score) + ";"
 
 
 def main():
@@ -88,6 +108,7 @@ def main():
 
     wall = Wall(0, 0, 10, SCREEN_HEIGHT)
     wall2 = Wall(SCREEN_WIDTH - 10, 0, 10, SCREEN_HEIGHT)
+    walls.add(wall)
     walls.add(wall2)
     all_sprites_list.add(wall2)
 
@@ -101,9 +122,9 @@ def main():
         HOST = '217.101.168.167'
         # HOST = 'localhost';
         PORT = 25565
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock.connect((HOST, PORT))
+            client_socket.connect((HOST, PORT))
         except Exception as e:
             print("Cannot connect to the server:", e)
         print("Connected")
@@ -139,21 +160,27 @@ def main():
         if keys[pygame.K_w]:
             player.eatSomething(5)
 
+
         # socket logic update players
         if not LOCAL_DEBUG:
-            sock.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
-            for data in sock.recv(4096).decode().split(";"):
-                if not data:
-                    break
+            if player.hasUpdated():
+                client_socket.send((player.getData()).encode())
 
-                print(data)
+            read_sockets, write_sockets, error_sockets = select.select([client_socket], [], [], 0.01)
+            for sock in read_sockets:
+                for data in sock.recv(4096).decode().split(";"):
+                    if not data:
+                        break
 
-                port, x, y = data.split(":")
-                if port not in otherplayers:
-                    p = Player(screen)
-                    all_sprites_list.add(p)
-                    otherplayers[port] = p
-                otherplayers[port].setNewCoords(int(x), int(y))
+                    print(data)
+
+                    port, x, y, score = data.split(":")
+                    if port not in otherplayers:
+                        p = Player(screen, walls)
+                        all_sprites_list.add(p)
+                        otherplayers[port] = p
+                    otherplayers[port].setNewStats(int(x), int(y), int(score))
+
 
         all_sprites_list.update()
 
