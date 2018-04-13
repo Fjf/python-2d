@@ -1,12 +1,21 @@
 # import the pygame module, so you can use it
 import pygame
+from pygame.math import Vector2
 import socket
 import time
 
 WHITE = (255, 255, 255)
 
+class Wall(pygame.sprite.Sprite):
+    def __init__(self,x,y,width,height):
+        super().__init__()
+        self.image = pygame.Surface([width, height])
+        self.rect = self.image.get_rect(topleft=(x, y))
+        # self.rect.y = y
+        # self.rect.x = x
+
 class Player(pygame.sprite.Sprite):
-    def __init__(self, screen):
+    def __init__(self, screen, walls):
         # Call the parent class (Sprite) constructor
         super().__init__()
         # Pass in the color of the car, and its x and y position, width and height.
@@ -24,22 +33,25 @@ class Player(pygame.sprite.Sprite):
         # Fetch the rectangle object that has the dimensions of the image.
         self.rect = self.image.get_rect()
         self.screen = screen
+        self.velocity = Vector2(0, 0)
+        self.walls = walls
 
     def draw(self, surface):
         pygame.draw.rect(self.screen, pygame.Color(255, 0, 0, 128), self.rect)
 
-    def moveRight(self, pixels):
-        self.rect.x += pixels
+    def update(self):
+        self.rect.x += self.velocity.x
+        self.rect.y += self.velocity.y
+        move = self.wall_collisions()
+        if not move:
+            self.rect.x -= self.velocity.x
+            self.rect.y -= self.velocity.y
 
-    def moveLeft(self, pixels):
-        self.rect.x -= pixels
-
-    def moveUp(self, pixels):
-        self.rect.y -= pixels
-
-    def moveDown(self, pixels):
-        self.rect.y += pixels
-
+    def wall_collisions(self):
+        for wall in self.walls:
+            if(pygame.sprite.collide_rect(self, wall)):
+                 return False
+        return True
     def setNewCoords(self, x, y):
         self.rect.x = x
         self.rect.y = y
@@ -62,24 +74,32 @@ def main():
     # define a variable to control the main loop
     running = True
 
+
     all_sprites_list = pygame.sprite.Group()
-    player = Player(screen)
+    walls = pygame.sprite.Group()
+
+    wall = Wall(0, 0, 10, scr_height)
+    wall2 = Wall(scr_width - 10, 0, 10, scr_height)
+    walls.add(wall2)
+    all_sprites_list.add(wall2)
+
+    player = Player(screen, walls)
     all_sprites_list.add(player)
 
     clock = pygame.time.Clock()
 
     # Connect to server
-    HOST = 'localhost'
-    PORT = 5000
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((HOST, PORT))
-    except Exception as e:
-        print("Cannot connect to the server:", e)
-    print("Connected")
-
-
-    otherplayers = {}
+    # HOST = '217.101.168.167'
+    # PORT = 25565
+    # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # try:
+    #     sock.connect((HOST, PORT))
+    # except Exception as e:
+    #     print("Cannot connect to the server:", e)
+    # print("Connected")
+    #
+    #
+    # otherplayers = {}
 
     # main loop
     while running:
@@ -90,31 +110,34 @@ def main():
                 # change the value to False, to exit the main loop
                 running = False
 
+        player.velocity.x = 0
+        player.velocity.y = 0
+
         # Handle keys
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            player.moveLeft(5)
+            player.velocity.x = -5
         if keys[pygame.K_RIGHT]:
-            player.moveRight(5)
+            player.velocity.x = 5
         if keys[pygame.K_UP]:
-            player.moveUp(5)
+            player.velocity.y = -5
         if keys[pygame.K_DOWN]:
-            player.moveDown(5)
+            player.velocity.y = 5
 
         # socket logic update players
-        sock.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
-        for data in sock.recv(4096).decode().split(";"):
-            if not data:
-                break
-
-            print(data)
-
-            port, x, y = data.split(":")
-            if port not in otherplayers:
-                p = Player(screen)
-                all_sprites_list.add(p)
-                otherplayers[port] = p
-            otherplayers[port].setNewCoords(int(x), int(y))
+        # sock.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
+        # for data in sock.recv(4096).decode().split(";"):
+        #     if not data:
+        #         break
+        #
+        #     print(data)
+        #
+        #     port, x, y = data.split(":")
+        #     if port not in otherplayers:
+        #         p = Player(screen)
+        #         all_sprites_list.add(p)
+        #         otherplayers[port] = p
+        #     otherplayers[port].setNewCoords(int(x), int(y))
 
         all_sprites_list.update()
 
