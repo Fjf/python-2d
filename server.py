@@ -3,9 +3,9 @@
 import socket, select
 
 
-def broadcast_data(server_socket, clients, string):
+def broadcast_data(server_socket, client_socket, clients, string):
     for client in clients:
-        if client == server_socket:
+        if client == server_socket or client == client_socket:
             continue
         client.send(string.encode())
 
@@ -24,6 +24,8 @@ if __name__ == "__main__":
     # Add server socket to the list of readable connections
     clients.append(server_socket)
 
+    player_data = {}
+
     print("Server started on port " + str(PORT))
 
     while 1:
@@ -39,8 +41,10 @@ if __name__ == "__main__":
                     sockfd, addr = server_socket.accept()
                     clients.append(sockfd)
                     print("Client (%s, %s) connected" % addr)
-                except:
-                    print("Wadu snek")
+                    for peername in player_data:
+                        sockfd.send((str(peername) + ":" + player_data[peername] + ";").encode())
+                except Exception as e:
+                    print(e)
 
             #Some incoming message from a client
             else:
@@ -51,15 +55,19 @@ if __name__ == "__main__":
                     data = sock.recv(RECV_BUFFER)
                     # echo back the client message
                     if data:
-                        stringdata = data.decode('utf-8')
+                        stringdata = data.decode('utf-8').split(";")[-2]
+                        if stringdata == "":
+                            continue
+
+                        player_data[sock.getpeername()[1]] = stringdata
                         stringdata = str(sock.getpeername()[1]) + ":" + stringdata + ";"
-                        broadcast_data(server_socket, clients, stringdata)
+                        broadcast_data(server_socket, sock, clients, stringdata)
 
                 # client disconnected, so remove from socket list
                 except:
                     clients.remove(sock)
                     sock.close()
-                    broadcast_data(server_socket, clients, "Client (%s, %s) is offline" % addr)
+                    broadcast_data(server_socket, None, clients, "Client (%s, %s) is offline" % addr)
                     print("Client (%s, %s) is offline" % addr)
                     continue
 
