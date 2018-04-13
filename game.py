@@ -39,6 +39,8 @@ class Player(pygame.sprite.Sprite):
         self.prev_y = 0
         self.prev_score = 0
 
+        self.otherplayers = {}
+
     def draw(self, surface):
         pygame.draw.rect(surface, pygame.Color(255, 0, 0, 128), self.rect)
 
@@ -46,12 +48,11 @@ class Player(pygame.sprite.Sprite):
         self.rect.x += self.velocity.x
         self.rect.y += self.velocity.y
 
+        self.player_collision()
+
         collision = self.wall_collisions()
         if collision:
-            self.score = 0
-            self.rect.x = SCREEN_WIDTH / 2
-            self.rect.y = SCREEN_HEIGHT / 2
-            self.updateSprite()
+            self.die()
             # self.rect.x -= self.velocity.x
             # self.rect.y -= self.velocity.y
 
@@ -60,6 +61,21 @@ class Player(pygame.sprite.Sprite):
             if(pygame.sprite.collide_rect(self, wall)):
                  return True
         return False
+
+    def die(self):
+        self.score = 0
+        self.rect.x = SCREEN_WIDTH / 2
+        self.rect.y = SCREEN_HEIGHT / 2
+        self.updateSprite()
+
+    def player_collision(self):
+        for id in self.otherplayers:
+            if pygame.sprite.collide_rect(self, self.otherplayers[id]):
+                if self.image.get_width() - self.otherplayers[id].image.get_width() > 3:
+                    self.eatSomething(self.otherplayers[id].score)
+                    return
+                elif self.image.get_width() - self.otherplayers[id].image.get_width() < -3:
+                    self.die()
 
     def eatSomething(self, amount):
         self.score += amount
@@ -115,7 +131,7 @@ def main():
     wall3 = Wall(0, 0, SCREEN_WIDTH, 10)
     wall4 = Wall(0, SCREEN_HEIGHT - 10, SCREEN_WIDTH, 10)
     walls.add(wall, wall2, wall3, wall4)
-    all_sprites_list.add(wall, wall2, wall3, wall4)
+    # all_sprites_list.add(wall, wall2, wall3, wall4)
 
     player = Player(screen, walls)
     all_sprites_list.add(player)
@@ -133,9 +149,6 @@ def main():
         except Exception as e:
             print("Cannot connect to the server:", e)
         print("Connected")
-
-
-    otherplayers = {}
 
     # main loop
     while running:
@@ -178,17 +191,18 @@ def main():
                         break
 
                     if data.startswith("msg"):
-                        print(data.split(":")[1])
+                        player.otherplayers[data.split(":")[1]] = None
+                        print(data.split(":")[2])
                         break
 
                     print(data)
 
                     port, x, y, score = data.split(":")
-                    if port not in otherplayers:
+                    if port not in player.otherplayers:
                         p = Player(screen, walls)
                         all_sprites_list.add(p)
-                        otherplayers[port] = p
-                    otherplayers[port].setNewStats(int(x), int(y), int(score))
+                        player.otherplayers[port] = p
+                    player.otherplayers[port].setNewStats(int(x), int(y), int(score))
 
 
         all_sprites_list.update()
