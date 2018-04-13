@@ -3,8 +3,12 @@ import pygame
 from pygame.math import Vector2
 import socket
 import time
+import math
 
 WHITE = (255, 255, 255)
+LOCAL_DEBUG = True
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
 
 class Wall(pygame.sprite.Sprite):
     def __init__(self,x,y,width,height):
@@ -18,26 +22,23 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, screen, walls):
         # Call the parent class (Sprite) constructor
         super().__init__()
-        # Pass in the color of the car, and its x and y position, width and height.
-        # Set the background color and set it to be transparent
+
+        # You start without score (small)
+        self.score = 0
+
         self.image = pygame.Surface([30, 30])
-        self.image.fill(WHITE)
-        self.image.set_colorkey(WHITE)
-
-        # Draw the car (a rectangle!)
-        pygame.draw.rect(self.image, pygame.Color(255, 0, 0, 128), [0, 0, 30, 30])
-
-        # Instead we could load a proper pciture of a car...
         self.image = pygame.image.load("LUL.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (30, 30))
 
         # Fetch the rectangle object that has the dimensions of the image.
-        self.rect = self.image.get_rect()
+        self.rect = self.image.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
         self.screen = screen
         self.velocity = Vector2(0, 0)
         self.walls = walls
 
     def draw(self, surface):
         pygame.draw.rect(self.screen, pygame.Color(255, 0, 0, 128), self.rect)
+
 
     def update(self):
         self.rect.x += self.velocity.x
@@ -52,13 +53,22 @@ class Player(pygame.sprite.Sprite):
             if(pygame.sprite.collide_rect(self, wall)):
                  return False
         return True
+
+    def eatSomething(self, amount):
+        self.score += amount
+
+        # Update image size.
+        self.image = pygame.image.load("LUL.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (int(30 + math.sqrt(self.score)), int(30 + math.sqrt(self.score))))
+        # Update rectangle
+        self.rect = self.image.get_rect(center=(self.rect.x + self.rect.width//2, self.rect.y + self.rect.height//2))
+
     def setNewCoords(self, x, y):
         self.rect.x = x
         self.rect.y = y
 
 
 def main():
-
     # initialize the pygame module
     pygame.init()
     # load and set the logo
@@ -67,9 +77,7 @@ def main():
     pygame.display.set_caption("minimal program")
 
     # create a surface on screen that has the size of 240 x 180
-    scr_width = 600
-    scr_height = 300;
-    screen = pygame.display.set_mode((scr_width, scr_height))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # define a variable to control the main loop
     running = True
@@ -78,8 +86,8 @@ def main():
     all_sprites_list = pygame.sprite.Group()
     walls = pygame.sprite.Group()
 
-    wall = Wall(0, 0, 10, scr_height)
-    wall2 = Wall(scr_width - 10, 0, 10, scr_height)
+    wall = Wall(0, 0, 10, SCREEN_HEIGHT)
+    wall2 = Wall(SCREEN_WIDTH - 10, 0, 10, SCREEN_HEIGHT)
     walls.add(wall2)
     all_sprites_list.add(wall2)
 
@@ -88,18 +96,20 @@ def main():
 
     clock = pygame.time.Clock()
 
-    # Connect to server
-    # HOST = '217.101.168.167'
-    # PORT = 25565
-    # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # try:
-    #     sock.connect((HOST, PORT))
-    # except Exception as e:
-    #     print("Cannot connect to the server:", e)
-    # print("Connected")
-    #
-    #
-    # otherplayers = {}
+    if not LOCAL_DEBUG:
+        # Connect to server
+        HOST = '217.101.168.167'
+        # HOST = 'localhost';
+        PORT = 25565
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect((HOST, PORT))
+        except Exception as e:
+            print("Cannot connect to the server:", e)
+        print("Connected")
+
+
+    otherplayers = {}
 
     # main loop
     while running:
@@ -108,6 +118,9 @@ def main():
             # only do something if the event is of type QUIT
             if event.type == pygame.QUIT:
                 # change the value to False, to exit the main loop
+                if not LOCAL_DEBUG:
+                    sock.close()
+
                 running = False
 
         player.velocity.x = 0
@@ -123,26 +136,29 @@ def main():
             player.velocity.y = -5
         if keys[pygame.K_DOWN]:
             player.velocity.y = 5
+        if keys[pygame.K_w]:
+            player.eatSomething(5)
 
         # socket logic update players
-        # sock.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
-        # for data in sock.recv(4096).decode().split(";"):
-        #     if not data:
-        #         break
-        #
-        #     print(data)
-        #
-        #     port, x, y = data.split(":")
-        #     if port not in otherplayers:
-        #         p = Player(screen)
-        #         all_sprites_list.add(p)
-        #         otherplayers[port] = p
-        #     otherplayers[port].setNewCoords(int(x), int(y))
+        if not LOCAL_DEBUG:
+            sock.send((str(player.rect.x) + ":" + str(player.rect.y)).encode())
+            for data in sock.recv(4096).decode().split(";"):
+                if not data:
+                    break
+
+                print(data)
+
+                port, x, y = data.split(":")
+                if port not in otherplayers:
+                    p = Player(screen)
+                    all_sprites_list.add(p)
+                    otherplayers[port] = p
+                otherplayers[port].setNewCoords(int(x), int(y))
 
         all_sprites_list.update()
 
         # Clear screen
-        pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, scr_width, scr_height))
+        pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
 
         # Draw all sprites in the group of sprites
         all_sprites_list.draw(screen)
