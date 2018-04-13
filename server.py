@@ -68,7 +68,7 @@ if __name__ == "__main__":
                     clients.remove(sock)
                     player_data[sock.getpeername()[1]] = ""
                     sock.close()
-                    broadcast_data(server_socket, None, clients, "msg:Client (%s) is offline" % addr[1])
+                    broadcast_data(server_socket, None, clients, "msg:%s:Client (%s) is offline" % (addr[1], addr[1]))
                     print("Client (%s, %s) is offline" % addr)
                     continue
 
