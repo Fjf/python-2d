@@ -43,15 +43,17 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.rect(surface, pygame.Color(255, 0, 0, 128), self.rect)
 
     def update(self):
-        collision = self.wall_collisions()
         self.rect.x += self.velocity.x
         self.rect.y += self.velocity.y
 
-        if not collision:
-            collision = self.wall_collisions()
-            if collision:
-                self.rect.x -= self.velocity.x
-                self.rect.y -= self.velocity.y
+        collision = self.wall_collisions()
+        if collision:
+            self.score = 0
+            self.rect.x = SCREEN_WIDTH / 2
+            self.rect.y = SCREEN_HEIGHT / 2
+            self.updateSprite()
+            # self.rect.x -= self.velocity.x
+            # self.rect.y -= self.velocity.y
 
     def wall_collisions(self):
         for wall in self.walls:
