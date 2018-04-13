@@ -17,19 +17,9 @@ class Player(pygame.sprite.Sprite):
         # You start without score (small)
         self.score = 0
 
-        filter = pygame.Surface([30, 30])
-        pygame.draw.circle(filter, pygame.Color(255, 255, 255, 255), [30 // 2, 30 // 2], 15)
-
         self.image = pygame.Surface([30, 30])
         self.image = pygame.image.load("LUL.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (30, 30))
-
-        # Cut the edges out of the image to make it rounded.
-        # TODO: Find another way to do this; this is very slow.
-        for x in range(pygame.Surface.get_width(filter)):
-            for y in range(pygame.Surface.get_height(filter)):
-                if filter.get_at((x, y)) != pygame.Color(255, 255, 255, 255):
-                    self.image.set_at((x, y), pygame.Color(0, 0, 0, 0))
 
         # Fetch the rectangle object that has the dimensions of the image.
         self.rect = self.image.get_rect()
