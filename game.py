@@ -177,6 +177,7 @@ def main():
 
                     if data.startswith("msg"):
                         print(data.split(":")[1])
+                        break
 
                     print(data)
 
