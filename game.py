@@ -175,6 +175,9 @@ def main():
                     if not data:
                         break
 
+                    if data.startswith("msg"):
+                        print(data.split(":")[1])
+
                     print(data)
 
                     port, x, y, score = data.split(":")

@@ -66,8 +66,9 @@ if __name__ == "__main__":
                 # client disconnected, so remove from socket list
                 except:
                     clients.remove(sock)
+                    player_data[sock.getpeername()[1]] = ""
                     sock.close()
-                    broadcast_data(server_socket, None, clients, "Client (%s, %s) is offline" % addr)
+                    broadcast_data(server_socket, None, clients, "msg:Client (%s) is offline" % addr[1])
                     print("Client (%s, %s) is offline" % addr)
                     continue
 
