@@ -15,19 +15,23 @@ class Player(pygame.sprite.Sprite):
         # Pass in the color of the car, and its x and y position, width and height.
         # Set the background color and set it to be transparent
 
-        self.filter = pygame.Surface([30, 30])
-        # pygame.draw.rect(self.filter, pygame.Color(255, 0, 0, 255))
-        pygame.draw.circle(self.filter, pygame.Color(255, 0, 0, 10), [30 // 2, 30 // 2], 15)
-        # self.filter.fill(pygame.Color(255, 0, 0, 128))
 
-        # Instead we could load a proper pciture
+        filter = pygame.Surface([30, 30])
+        pygame.draw.circle(filter, pygame.Color(255, 255, 255, 255), [30 // 2, 30 // 2], 15)
+
+        self.image = pygame.Surface([30, 30])
         self.image = pygame.image.load("LUL.png").convert_alpha()
-        # for
+        self.image = pygame.transform.scale(self.image, (30, 30))
 
-        self.image = self.filter
+        # Cut the edges out of the image to make it rounded.
+        # TODO: Find another way to do this; this is very slow.
+        for x in range(pygame.Surface.get_width(filter)):
+            for y in range(pygame.Surface.get_height(filter)):
+                if filter.get_at((x, y)) != pygame.Color(255, 255, 255, 255):
+                    self.image.set_at((x, y), pygame.Color(0, 0, 0, 0))
+
         # Fetch the rectangle object that has the dimensions of the image.
-        # self.rect = self.image.get_rect()
-        self.rect = self.filter.get_rect()
+        self.rect = self.image.get_rect()
         self.screen = screen
 
     def draw(self, surface):
@@ -48,6 +52,7 @@ class Player(pygame.sprite.Sprite):
     def setNewCoords(self, x, y):
         self.rect.x = x
         self.rect.y = y
+
 
 def main():
     # initialize the pygame module
