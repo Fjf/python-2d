@@ -1,12 +1,13 @@
 # import the pygame module, so you can use it
 import pygame
+import random
 from pygame.math import Vector2
 import socket, select
 import time
 import math
 
 WHITE = (255, 255, 255)
-LOCAL_DEBUG = False
+LOCAL_DEBUG = True
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
@@ -24,6 +25,8 @@ class Player(pygame.sprite.Sprite):
 
         # You start without score (small)
         self.score = 0
+        self.max_speed = 2.5
+        self.speed = self.max_speed
 
         self.image = pygame.Surface([30, 30])
         self.image = pygame.image.load("LUL.png").convert_alpha()
@@ -48,13 +51,32 @@ class Player(pygame.sprite.Sprite):
         self.rect.x += self.velocity.x
         self.rect.y += self.velocity.y
 
+        self.velocity.x = round(0.89 * self.velocity.x)
+        self.velocity.y = round(0.89 * self.velocity.y)
+        if self.velocity.x != 0:
+            self.velocity.x -= self.velocity.x / abs(self.velocity.x)
+        if self.velocity.y != 0:
+            self.velocity.y -= self.velocity.y / abs(self.velocity.y)
+
         self.player_collision()
 
         collision = self.wall_collisions()
         if collision:
             self.die()
-            # self.rect.x -= self.velocity.x
-            # self.rect.y -= self.velocity.y
+
+
+    def updateKeys(self, keys):
+        if keys[pygame.K_LEFT]:
+            self.velocity.x += -self.speed
+        if keys[pygame.K_RIGHT]:
+            self.velocity.x += self.speed
+        if keys[pygame.K_UP]:
+            self.velocity.y += -self.speed
+        if keys[pygame.K_DOWN]:
+            self.velocity.y += self.speed
+        if keys[pygame.K_w]:
+            self.eatSomething(5)
+
 
     def wall_collisions(self):
         for wall in self.walls:
@@ -64,8 +86,9 @@ class Player(pygame.sprite.Sprite):
 
     def die(self):
         self.score = 0
-        self.rect.x = SCREEN_WIDTH / 2
-        self.rect.y = SCREEN_HEIGHT / 2
+        self.rect.x = random.randint(10, SCREEN_WIDTH - 10)
+        self.rect.y = random.randint(10, SCREEN_HEIGHT - 10)
+        self.speed = self.max_speed
         self.updateSprite()
 
     def player_collision(self):
@@ -131,7 +154,7 @@ def main():
     wall3 = Wall(0, 0, SCREEN_WIDTH, 10)
     wall4 = Wall(0, SCREEN_HEIGHT - 10, SCREEN_WIDTH, 10)
     walls.add(wall, wall2, wall3, wall4)
-    # all_sprites_list.add(wall, wall2, wall3, wall4)
+    all_sprites_list.add(wall, wall2, wall3, wall4)
 
     player = Player(screen, walls)
     all_sprites_list.add(player)
@@ -140,8 +163,8 @@ def main():
 
     if not LOCAL_DEBUG:
         # Connect to server
-        HOST = '217.101.168.167'
-        # HOST = 'localhost';
+        # HOST = '217.101.168.167'
+        HOST = 'localhost';
         PORT = 25565
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -158,26 +181,13 @@ def main():
             if event.type == pygame.QUIT:
                 # change the value to False, to exit the main loop
                 if not LOCAL_DEBUG:
-                    sock.close()
+                    client_socket.close()
 
                 running = False
 
-        player.velocity.x = 0
-        player.velocity.y = 0
-
         # Handle keys
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            player.velocity.x = -5
-        if keys[pygame.K_RIGHT]:
-            player.velocity.x = 5
-        if keys[pygame.K_UP]:
-            player.velocity.y = -5
-        if keys[pygame.K_DOWN]:
-            player.velocity.y = 5
-        if keys[pygame.K_w]:
-            player.eatSomething(5)
-
+        player.updateKeys(keys)
 
         # socket logic update players
         if not LOCAL_DEBUG:
