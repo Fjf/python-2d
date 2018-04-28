@@ -7,11 +7,12 @@ import time
 import math
 
 WHITE = (255, 255, 255)
-LOCAL_DEBUG = True
+LOCAL_DEBUG = False
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 MAP_WIDTH = 2000
 MAP_HEIGHT = 2000
+SERVER_ADDR = 'localhost'
 
 class Wall(pygame.sprite.Sprite):
     def __init__(self,x,y,width,height):
@@ -25,6 +26,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, screen, walls):
         # Call the parent class (Sprite) constructor
         super().__init__()
+
 
         # You start without score (small)
         self.score = 0
@@ -118,11 +120,11 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(self.rect.x + self.rect.width//2, self.rect.y + self.rect.height//2))
 
     def hasUpdated(self):
-        if self.rect.x == self.prev_x and self.rect.y == self.prev_y and self.score == self.prev_score:
+        if self.coord.x == self.prev_x and self.coord.y == self.prev_y and self.score == self.prev_score:
             return False
         else:
-            self.prev_x = self.rect.x
-            self.prev_y = self.rect.y
+            self.prev_x = self.coord.x
+            self.prev_y = self.coord.y
             self.prev_score = self.score
             return True
 
@@ -133,7 +135,8 @@ class Player(pygame.sprite.Sprite):
         self.updateSprite()
 
     def getData(self):
-        return str(self.rect.x) + ":" + str(self.rect.y) + ":" + str(self.score) + ";"
+        print(self.coord.x)
+        return str(int(self.coord.x)) + ":" + str(int(self.coord.y)) + ":" + str(self.score) + ";"
 
 
 def main():
@@ -169,7 +172,7 @@ def main():
     if not LOCAL_DEBUG:
         # Connect to server
         # HOST = '217.101.168.167'
-        HOST = 'localhost';
+        HOST = SERVER_ADDR;
         PORT = 25565
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
