@@ -10,6 +10,8 @@ WHITE = (255, 255, 255)
 LOCAL_DEBUG = True
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
+MAP_WIDTH = 2000
+MAP_HEIGHT = 2000
 
 class Wall(pygame.sprite.Sprite):
     def __init__(self,x,y,width,height):
@@ -17,6 +19,7 @@ class Wall(pygame.sprite.Sprite):
         self.image = pygame.Surface([width, height])
         self.image.fill(pygame.Color(255, 255, 0))
         self.rect = self.image.get_rect(topleft=(x, y))
+        self.coord = Vector2(x, y)
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, screen, walls):
@@ -38,6 +41,8 @@ class Player(pygame.sprite.Sprite):
         self.velocity = Vector2(0, 0)
         self.walls = walls
 
+        self.coord = Vector2(0, 0)
+
         self.prev_x = 0
         self.prev_y = 0
         self.prev_score = 0
@@ -48,8 +53,8 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.rect(surface, pygame.Color(255, 0, 0, 128), self.rect)
 
     def update(self):
-        self.rect.x += self.velocity.x
-        self.rect.y += self.velocity.y
+        self.coord.x += round(self.velocity.x)
+        self.coord.y += round(self.velocity.y)
 
         self.velocity.x = round(0.89 * self.velocity.x)
         self.velocity.y = round(0.89 * self.velocity.y)
@@ -86,8 +91,8 @@ class Player(pygame.sprite.Sprite):
 
     def die(self):
         self.score = 0
-        self.rect.x = random.randint(10, SCREEN_WIDTH - 10)
-        self.rect.y = random.randint(10, SCREEN_HEIGHT - 10)
+        self.coord.x = random.randint(10, MAP_WIDTH - 10)
+        self.coord.y = random.randint(10, MAP_HEIGHT - 10)
         self.speed = self.max_speed
         self.updateSprite()
 
@@ -122,8 +127,8 @@ class Player(pygame.sprite.Sprite):
             return True
 
     def setNewStats(self, x, y, score):
-        self.rect.x = x
-        self.rect.y = y
+        self.coord.x = x
+        self.coord.y = y
         self.score = score
         self.updateSprite()
 
@@ -149,10 +154,10 @@ def main():
     all_sprites_list = pygame.sprite.Group()
     walls = pygame.sprite.Group()
 
-    wall = Wall(0, 0, 10, SCREEN_HEIGHT)
-    wall2 = Wall(SCREEN_WIDTH - 10, 0, 10, SCREEN_HEIGHT)
-    wall3 = Wall(0, 0, SCREEN_WIDTH, 10)
-    wall4 = Wall(0, SCREEN_HEIGHT - 10, SCREEN_WIDTH, 10)
+    wall = Wall(0, 0, 10, MAP_HEIGHT)
+    wall2 = Wall(MAP_WIDTH - 10, 0, 10, MAP_HEIGHT)
+    wall3 = Wall(0, 0, MAP_WIDTH, 10)
+    wall4 = Wall(0, MAP_HEIGHT - 10, MAP_WIDTH, 10)
     walls.add(wall, wall2, wall3, wall4)
     all_sprites_list.add(wall, wall2, wall3, wall4)
 
@@ -215,10 +220,16 @@ def main():
                     player.otherplayers[port].setNewStats(int(x), int(y), int(score))
 
 
+        for sprite in all_sprites_list:
+            if sprite != player:
+                sprite.rect.x = sprite.coord.x - player.coord.x + SCREEN_WIDTH // 2
+                sprite.rect.y = sprite.coord.y - player.coord.y + SCREEN_HEIGHT // 2
+
         all_sprites_list.update()
 
         # Clear screen
         pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+
 
         # Draw all sprites in the group of sprites
         all_sprites_list.draw(screen)
