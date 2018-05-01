@@ -79,7 +79,7 @@ class Player(pygame.sprite.Sprite):
         if self.velocity.y != 0:
             self.velocity.y -= self.velocity.y / abs(self.velocity.y)
 
-        self.player_collision()
+        # self.player_collision()
 
         collision = self.wall_collisions()
         if collision:
@@ -112,14 +112,14 @@ class Player(pygame.sprite.Sprite):
         self.speed = self.max_speed
         self.updateSprite()
 
-    def player_collision(self):
-        for id in self.otherplayers:
-            if pygame.sprite.collide_rect(self, self.otherplayers[id]):
-                if self.image.get_width() - self.otherplayers[id].image.get_width() > 3:
-                    self.eatSomething(self.otherplayers[id].score)
-                    return
-                elif self.image.get_width() - self.otherplayers[id].image.get_width() < -3:
-                    self.die()
+    # def player_collision(self):
+    #     for id in self.otherplayers:
+    #         if pygame.sprite.collide_rect(self, self.otherplayers[id]):
+    #             if self.image.get_width() - self.otherplayers[id].image.get_width() > 3:
+    #                 self.eatSomething(self.otherplayers[id].score)
+    #                 return
+    #             elif self.image.get_width() - self.otherplayers[id].image.get_width() < -3:
+    #                 self.die()
 
     def eatSomething(self, amount):
         self.score += amount
@@ -231,6 +231,13 @@ def main():
                                 all_sprites_list.add(p)
                                 player.otherplayers[id] = p
                             player.otherplayers[id].setNewStats(int(x), int(y), int(score))
+
+                        elif decd.getDataType() == encoder.Types.DEATH.value:
+                            decd.getData()
+                            player.die()
+
+                        elif decd.getDataType() == encoder.Types.KILL.value:
+                            player.eatSomething(decd.getData())
 
                         elif decd.getDataType() == encoder.Types.MESSAGE.value:
                             pass

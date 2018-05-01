@@ -4,6 +4,10 @@ from enum import Enum
 class Types(Enum):
     COORDINATE = 1
     MESSAGE = 2
+    DISCONNECT = 3
+    CONNECT = 4
+    DEATH = 5
+    KILL = 6
 
 
 def intToBytes(org_num, nbytes):
@@ -54,6 +58,23 @@ class Encoder:
         self.bytes += intToBytes(int(coord.y), 2)
         self.bytes += intToBytes(int(score), 2)
 
+    def setDeathData(self):
+        length_bytes = intToBytes(5, 2)
+        # Create bytestream from the given data.
+        self.bytes += length_bytes
+        # Add two empty bytes which the server can fill with player id.
+        self.bytes += intToBytes(0, 2)
+        self.bytes += intToBytes(Types.DEATH.value, 1)
+
+    def setKillData(self, score):
+        length_bytes = intToBytes(7, 2)
+        # Create bytestream from the given data.
+        self.bytes += length_bytes
+        # Add two empty bytes which the server can fill with player id.
+        self.bytes += intToBytes(0, 2)
+        self.bytes += intToBytes(Types.KILL.value, 1)
+        self.bytes += intToBytes(score, 2)
+
     def getBytes(self):
         data = self.bytes
         self.bytes = bytearray()
@@ -98,6 +119,17 @@ class Decoder:
             data = self.bytes[5:5 + self.data_length].decode('utf-8')
             self.bytes = self.bytes[5 + self.data_length:]
             return data
+
+        if self.data_type == Types.KILL.value:
+            # Returns tuple of the form (x, y, score)
+            data = bytesToInt(self.bytes, 5, 7)
+            # Remove processed data.
+            self.bytes = self.bytes[7:]
+            return data
+
+        if self.data_type == Types.DEATH.value:
+            self.bytes = self.bytes[5:]
+            return None
 
     def getBytes(self):
         if self.data_type == Types.COORDINATE.value:
