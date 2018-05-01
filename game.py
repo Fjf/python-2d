@@ -5,6 +5,7 @@ from pygame.math import Vector2
 import socket, select
 import time
 import math
+import encoder
 
 WHITE = (255, 255, 255)
 LOCAL_DEBUG = False
@@ -34,7 +35,20 @@ class Player(pygame.sprite.Sprite):
         self.speed = self.max_speed
 
         self.image = pygame.Surface([30, 30])
-        self.image = pygame.image.load("LUL.png").convert_alpha()
+        self.original_image = pygame.image.load("LUL.png").convert_alpha()
+
+        iw = self.original_image.get_width()
+        ih = self.original_image.get_height()
+        for x in range(iw):
+            for y in range(ih):
+                if int((x-iw/2)**2 + (y-ih/2)**2) > int((iw/2)**2):
+                    self.original_image.set_at((x, y), pygame.Color(0, 0, 0, 0))
+                    continue
+
+                if self.original_image.get_at((x, y)).a == 0:
+                    self.original_image.set_at((x, y), pygame.Color(40, 40, 40))
+
+
         self.image = pygame.transform.scale(self.image, (30, 30))
 
         # Fetch the rectangle object that has the dimensions of the image.
@@ -112,10 +126,8 @@ class Player(pygame.sprite.Sprite):
         self.updateSprite()
 
     def updateSprite(self):
-        move_amount = (math.ceil(30 + math.sqrt(self.score)) - self.image.get_width()) // 2 + 1
-        # Update image size.
-        self.image = pygame.image.load("LUL.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (int(30 + math.sqrt(self.score)), int(30 + math.sqrt(self.score))))
+        # Update image size
+        self.image = pygame.transform.scale(self.original_image, (int(30 + math.sqrt(self.score)), int(30 + math.sqrt(self.score))))
         # Update rectangle
         self.rect = self.image.get_rect(center=(self.rect.x + self.rect.width//2, self.rect.y + self.rect.height//2))
 
@@ -133,10 +145,6 @@ class Player(pygame.sprite.Sprite):
         self.coord.y = y
         self.score = score
         self.updateSprite()
-
-    def getData(self):
-        print(self.coord.x)
-        return str(int(self.coord.x)) + ":" + str(int(self.coord.y)) + ":" + str(self.score) + ";"
 
 
 def main():
@@ -166,6 +174,9 @@ def main():
 
     player = Player(screen, walls)
     all_sprites_list.add(player)
+
+    encd = encoder.Encoder()
+    decd = encoder.Decoder()
 
     clock = pygame.time.Clock()
 
@@ -200,27 +211,29 @@ def main():
         # socket logic update players
         if not LOCAL_DEBUG:
             if player.hasUpdated():
-                client_socket.send((player.getData()).encode())
+                # Encode player data and send over socket
+                encd.setCoordData(player.coord - Vector2(player.rect.width // 2, player.rect.height // 2), player.score)
+
+                client_socket.send(encd.getBytes())
 
             read_sockets, write_sockets, error_sockets = select.select([client_socket], [], [], 0.01)
             for sock in read_sockets:
-                for data in sock.recv(4096).decode().split(";"):
-                    if not data:
-                        break
+                bytes = sock.recv(4096)
 
-                    if data.startswith("msg"):
-                        player.otherplayers[data.split(":")[1]] = None
-                        print(data.split(":")[2])
-                        break
+                if bytes and len(bytes) > 0:
+                    decd.addData(bytes)
+                    if decd.processData():
+                        if decd.getDataType() == encoder.Types.COORDINATE.value:
+                            id, x, y, score = decd.getData()
+                            # Add unknown player to possible players.
+                            if id not in player.otherplayers:
+                                p = Player(screen, walls)
+                                all_sprites_list.add(p)
+                                player.otherplayers[id] = p
+                            player.otherplayers[id].setNewStats(int(x), int(y), int(score))
 
-                    print(data)
-
-                    port, x, y, score = data.split(":")
-                    if port not in player.otherplayers:
-                        p = Player(screen, walls)
-                        all_sprites_list.add(p)
-                        player.otherplayers[port] = p
-                    player.otherplayers[port].setNewStats(int(x), int(y), int(score))
+                        elif decd.getDataType() == encoder.Types.MESSAGE.value:
+                            pass
 
 
         for sprite in all_sprites_list:

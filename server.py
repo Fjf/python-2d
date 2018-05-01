@@ -1,13 +1,13 @@
 # Socket server in python using select function
 
 import socket, select
+import encoder
 
-
-def broadcast_data(server_socket, client_socket, clients, string):
+def broadcast_data(server_socket, client_socket, clients, bytes):
     for client in clients:
         if client == server_socket or client == client_socket:
             continue
-        client.send(string.encode())
+        client.send(bytes)
 
 if __name__ == "__main__":
 
@@ -25,6 +25,7 @@ if __name__ == "__main__":
     clients.append(server_socket)
 
     player_data = {}
+    old_player_data = {}
 
     print("Server started on port " + str(PORT))
 
@@ -33,7 +34,6 @@ if __name__ == "__main__":
         read_sockets, write_sockets, error_sockets = select.select(clients, [], [], 0.01)
 
         for sock in read_sockets:
-
             #New connection
             if sock == server_socket:
                 # Handle the case in which there is a new connection recieved through server_socket
@@ -41,8 +41,9 @@ if __name__ == "__main__":
                     sockfd, addr = server_socket.accept()
                     clients.append(sockfd)
                     print("Client (%s, %s) connected" % addr)
-                    for peername in player_data:
-                        sockfd.send((str(peername) + ":" + player_data[peername] + ";").encode())
+                    player_data[addr[1]] = encoder.Decoder()
+                    for peername in old_player_data:
+                        sockfd.send(old_player_data[peername])
                 except Exception as e:
                     print(e)
 
@@ -54,21 +55,28 @@ if __name__ == "__main__":
                     # a "Connection reset by peer" exception will be thrown
                     data = sock.recv(RECV_BUFFER)
                     # echo back the client message
-                    if data:
-                        stringdata = data.decode('utf-8').split(";")[-2]
-                        if stringdata == "":
-                            continue
+                    if data and len(data) > 0:
 
-                        player_data[sock.getpeername()[1]] = stringdata
-                        stringdata = str(sock.getpeername()[1]) + ":" + stringdata + ";"
-                        broadcast_data(server_socket, sock, clients, stringdata)
+                        player_data[sock.getpeername()[1]].addData(data)
+
+                        if player_data[sock.getpeername()[1]].processData():
+
+                            # Set sender of packet in bytestream.
+                            player_data[sock.getpeername()[1]].bytes[2:4] = encoder.intToBytes(sock.getpeername()[1], 2)
+
+                            bytes_data = player_data[sock.getpeername()[1]].getBytes()
+                            broadcast_data(server_socket, sock, clients, bytes_data)
+
+                            old_player_data[sock.getpeername()[1]] = bytes_data
+
 
                 # client disconnected, so remove from socket list
-                except:
+                except Exception as e:
+                    print(e)
                     clients.remove(sock)
                     player_data[sock.getpeername()[1]] = ""
                     sock.close()
-                    broadcast_data(server_socket, None, clients, "msg:%s:Client (%s) is offline" % (addr[1], addr[1]))
+                    # broadcast_data(server_socket, None, clients, "msg:%s:Client (%s) is offline" % (addr[1], addr[1]))
                     print("Client (%s, %s) is offline" % addr)
                     continue
 
