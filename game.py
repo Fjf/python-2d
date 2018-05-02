@@ -58,14 +58,14 @@ class Player(pygame.sprite.Sprite):
 
         # You start without score (small)
         self.score = 0
-        self.max_speed = 2.5
-        self.speed = self.max_speed
+        self.speed = 2.5
 
         self.image = pygame.Surface([30, 30])
         self.original_image = pygame.image.load("LUL.png").convert_alpha()
 
         iw = self.original_image.get_width()
         ih = self.original_image.get_height()
+        # Cut off the edges of the image, and fill all invisible pixels with grey.
         for x in range(iw):
             for y in range(ih):
                 if int((x-iw/2)**2 + (y-ih/2)**2) > int((iw/2)**2):
@@ -83,7 +83,6 @@ class Player(pygame.sprite.Sprite):
         self.screen = screen
         self.velocity = Vector2(0, 0)
         self.walls = walls
-
         self.coord = Vector2(0, 0)
 
         self.prev_x = 0
@@ -91,6 +90,9 @@ class Player(pygame.sprite.Sprite):
         self.prev_score = 0
 
         self.otherplayers = {}
+
+        self.die()
+
 
     def update(self):
         self.coord.x += round(self.velocity.x)
@@ -103,7 +105,7 @@ class Player(pygame.sprite.Sprite):
         if self.velocity.y != 0:
             self.velocity.y -= self.velocity.y / abs(self.velocity.y)
 
-        # self.player_collision()
+        self.updateSprite()
 
         collision = self.wall_collisions()
         if collision:
@@ -131,19 +133,9 @@ class Player(pygame.sprite.Sprite):
 
     def die(self):
         self.score = 0
-        self.coord.x = random.randint(10, MAP_WIDTH - 10)
-        self.coord.y = random.randint(10, MAP_HEIGHT - 10)
-        self.speed = self.max_speed
+        self.coord.x = random.randint(40, MAP_WIDTH - 40)
+        self.coord.y = random.randint(40, MAP_HEIGHT - 40)
         self.updateSprite()
-
-    # def player_collision(self):
-    #     for id in self.otherplayers:
-    #         if pygame.sprite.collide_rect(self, self.otherplayers[id]):
-    #             if self.image.get_width() - self.otherplayers[id].image.get_width() > 3:
-    #                 self.eatSomething(self.otherplayers[id].score)
-    #                 return
-    #             elif self.image.get_width() - self.otherplayers[id].image.get_width() < -3:
-    #                 self.die()
 
     def eatSomething(self, amount):
         self.score += amount
@@ -151,9 +143,12 @@ class Player(pygame.sprite.Sprite):
 
     def updateSprite(self):
         # Update image size
+        # if self.prev_score != self.score:
         self.image = pygame.transform.scale(self.original_image, (int(30 + math.sqrt(self.score)), int(30 + math.sqrt(self.score))))
+
         # Update rectangle
         self.rect = self.image.get_rect(center=(self.rect.x + self.rect.width//2, self.rect.y + self.rect.height//2))
+
 
     def hasUpdated(self):
         if self.coord.x == self.prev_x and self.coord.y == self.prev_y and self.score == self.prev_score:
@@ -233,6 +228,11 @@ def main():
         keys = pygame.key.get_pressed()
         player.updateKeys(keys)
 
+        # if player.hasUpdated():
+        #     print("----")
+        #     print(player.rect.x, player.rect.y)
+        #     print(player.coord.x, player.coord.y)
+
         # socket logic update players
         if not LOCAL_DEBUG:
             if player.hasUpdated():
@@ -267,7 +267,6 @@ def main():
                         elif decd.getDataType() == encoder.Types.MESSAGE.value:
                             pass
 
-
         for sprite in all_sprites_list:
             if sprite != player:
                 sprite.rect.x = sprite.coord.x - player.coord.x + SCREEN_WIDTH // 2
@@ -277,7 +276,6 @@ def main():
 
         # Clear screen
         pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
-
 
         # Draw all sprites in the group of sprites
         all_sprites_list.draw(screen)

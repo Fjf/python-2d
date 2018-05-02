@@ -23,8 +23,11 @@ def check_collision(clientid, clients):
         decd.addData(player_coordinates[id])
         if decd.processData():
             _, x, y, score = decd.getData()
-            dist = (x - clientx)**2 + (y - clienty)**2
-            if (int(30 + 30 + math.sqrt(score) + math.sqrt(clientscore))/2)**2 > dist:
+
+            dim = (30 + math.sqrt(score))//2
+            clientdim = (30 + math.sqrt(clientscore))//2
+            dist = ((x + dim) - (clientx + clientdim))**2 + ((y + dim) - (clienty + clientdim))**2
+            if (dim + clientdim)**2 > dist:
                 # Two players collided
                 encd = encoder.Encoder()
                 if math.sqrt(score) > math.sqrt(clientscore) + 5:
