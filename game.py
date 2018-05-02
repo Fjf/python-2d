@@ -34,20 +34,20 @@ class Wall(pygame.sprite.Sprite):
 #    memory access while updating sprite sizes etc.
 # - Width and height in the world
 
-class Game:
-    def __init__(self):
-        self.screen = None;
-        self.client_socket = None;
-        self.camera_pos = Vector2(20, 20)
-        self.width = 5000
-        self.height = 5000
-        self.active_player = None
-        self.objects = []
-        self.all_sprites_list = []
-
-    def draw(self):
-        self.active_player.draw(screen)
-        self.all_sprites_list.draw(screen)
+# class Game:
+#     def __init__(self):
+#         self.screen = None;
+#         self.client_socket = None;
+#         self.camera_pos = Vector2(20, 20)
+#         self.width = 5000
+#         self.height = 5000
+#         self.active_player = None
+#         self.objects = []
+#         self.all_sprites_list = []
+#
+#     def draw(self):
+#         self.active_player.draw(screen)
+#         self.all_sprites_list.draw(screen)
 
 
 class Player(pygame.sprite.Sprite):
@@ -57,8 +57,6 @@ class Player(pygame.sprite.Sprite):
 
 
         # You start without score (small)
-        self.x = 20
-        self.y = 20
         self.score = 0
         self.max_speed = 2.5
         self.speed = self.max_speed
@@ -199,7 +197,7 @@ def main():
     all_sprites_list.add(wall, wall2, wall3, wall4)
 
     player = Player(screen, walls)
-    # all_sprites_list.add(player)
+    all_sprites_list.add(player)
 
     encd = encoder.Encoder()
     decd = encoder.Decoder()
@@ -229,6 +227,7 @@ def main():
                     client_socket.close()
 
                 running = False
+                break
 
         # Handle keys
         keys = pygame.key.get_pressed()
@@ -248,7 +247,7 @@ def main():
 
                 if bytes and len(bytes) > 0:
                     decd.addData(bytes)
-                    if decd.processData():
+                    while decd.processData():
                         if decd.getDataType() == encoder.Types.COORDINATE.value:
                             id, x, y, score = decd.getData()
                             # Add unknown player to possible players.
@@ -281,7 +280,6 @@ def main():
 
 
         # Draw all sprites in the group of sprites
-        player.draw(screen)
         all_sprites_list.draw(screen)
 
         pygame.display.flip()

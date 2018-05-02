@@ -27,13 +27,13 @@ def check_collision(clientid, clients):
             if (int(30 + 30 + math.sqrt(score) + math.sqrt(clientscore))/2)**2 > dist:
                 # Two players collided
                 encd = encoder.Encoder()
-                if math.sqrt(score) > math.sqrt(clientscore) - 5:
+                if math.sqrt(score) > math.sqrt(clientscore) + 5:
                     # client lost
                     encd.setDeathData()
                     clients[clientid].send(encd.getBytes())
                     encd.setKillData(clientscore)
                     clients[id].send(encd.getBytes())
-                elif math.sqrt(clientscore) > math.sqrt(score) - 5:
+                elif math.sqrt(clientscore) > math.sqrt(score) + 5:
                     # client won
                     encd.setDeathData()
                     clients[id].send(encd.getBytes())
@@ -90,7 +90,7 @@ if __name__ == "__main__":
                         clientid = sock.getpeername()[1]
                         player_data[clientid].addData(data)
 
-                        if player_data[clientid].processData():
+                        while player_data[clientid].processData():
                             # Set sender of packet in bytearray.
                             player_data[clientid].bytes[2:4] = encoder.intToBytes(clientid, 2)
 
@@ -106,7 +106,6 @@ if __name__ == "__main__":
                 # client disconnected, so remove from socket list
                 except Exception as e:
                     print(e)
-                    print(a)
                     del clients[sock.getpeername()[1]]
                     del player_data[sock.getpeername()[1]]
                     sock.close()
