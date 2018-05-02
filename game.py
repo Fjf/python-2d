@@ -18,12 +18,41 @@ class Wall(pygame.sprite.Sprite):
         self.image.fill(pygame.Color(255, 255, 0))
         self.rect = self.image.get_rect(topleft=(x, y))
 
+# Stores data about the game
+# - Connection to server
+# - Camera position within level
+# - Update speed
+# Also stores data about the world
+# The following information should be in here:
+# - Location of all objects within this world including player characters.
+# - When loading a world, the sprites might be preloaded into memory to reduce
+#    memory access while updating sprite sizes etc.
+# - Width and height in the world
+
+class Game:
+    def __init__(self):
+        self.screen = None;
+        self.client_socket = None;
+        self.camera_pos = Vector2(20, 20)
+        self.width = 5000
+        self.height = 5000
+        self.active_player = None
+        self.objects = []
+        self.all_sprites_list = []
+
+    def draw(self):
+        self.active_player.draw(screen)
+        self.all_sprites_list.draw(screen)
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, screen, walls):
         # Call the parent class (Sprite) constructor
         super().__init__()
 
         # You start without score (small)
+        self.x = 20
+        self.y = 20
         self.score = 0
         self.max_speed = 2.5
         self.speed = self.max_speed
@@ -44,15 +73,12 @@ class Player(pygame.sprite.Sprite):
 
         self.otherplayers = {}
 
-    def draw(self, surface):
-        pygame.draw.rect(surface, pygame.Color(255, 0, 0, 128), self.rect)
-
     def update(self):
         self.rect.x += self.velocity.x
         self.rect.y += self.velocity.y
 
-        self.velocity.x = round(0.89 * self.velocity.x)
-        self.velocity.y = round(0.89 * self.velocity.y)
+        self.velocity.x = round(0.93 * self.velocity.x)
+        self.velocity.y = round(0.93 * self.velocity.y)
         if self.velocity.x != 0:
             self.velocity.x -= self.velocity.x / abs(self.velocity.x)
         if self.velocity.y != 0:
@@ -86,8 +112,8 @@ class Player(pygame.sprite.Sprite):
 
     def die(self):
         self.score = 0
-        self.rect.x = random.randint(10, SCREEN_WIDTH - 10)
-        self.rect.y = random.randint(10, SCREEN_HEIGHT - 10)
+        self.rect.x = random.randint(50, SCREEN_WIDTH - 50)
+        self.rect.y = random.randint(50, SCREEN_HEIGHT - 50)
         self.speed = self.max_speed
         self.updateSprite()
 
@@ -157,7 +183,7 @@ def main():
     all_sprites_list.add(wall, wall2, wall3, wall4)
 
     player = Player(screen, walls)
-    all_sprites_list.add(player)
+    # all_sprites_list.add(player)
 
     clock = pygame.time.Clock()
 
@@ -214,13 +240,13 @@ def main():
                         player.otherplayers[port] = p
                     player.otherplayers[port].setNewStats(int(x), int(y), int(score))
 
-
         all_sprites_list.update()
 
         # Clear screen
         pygame.draw.rect(screen, pygame.Color(0, 0, 0, 255), pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
 
         # Draw all sprites in the group of sprites
+        player.draw(screen)
         all_sprites_list.draw(screen)
 
         pygame.display.flip()
